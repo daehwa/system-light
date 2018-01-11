@@ -1,0 +1,13 @@
+{
+  "result_code": "200",
+  "result_msg": "Success",
+  "result_data": {
+    "gid": 8,
+    "gpid": "1234567890AABBCCDD",
+    "product_code": "03EF0103ABCDEFGH123456ABCDEFGH12345678",
+    "serial_number": "1609123456",
+    "iblid": "0004000000000000000000",
+    "ip": "192.168.2.97",
+    "tcp_port": 8080
+  }
+}
