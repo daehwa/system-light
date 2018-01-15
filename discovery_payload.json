@@ -91,6 +91,98 @@
           }
         }
       ]
+    },
+    {
+      "endpointId": "appliance-002",
+      "friendlyName": "Basement Light",
+      "description": "Smart Light by Sample Manufacturer",
+      "manufacturerName": "Sample Manufacturer",
+      "displayCategories": [
+        "LIGHT"
+      ],
+      "cookie": {
+        "extraDetail1": "optionalDetailForSkillAdapterToReferenceThisDevice",
+        "extraDetail2": "There can be multiple entries",
+        "extraDetail3": "but they should only be used for reference purposes",
+        "extraDetail4": "This is not a suitable place to maintain current device state"
+      },
+      "capabilities": [
+        {
+          "type": "AlexaInterface",
+          "interface": "Alexa.ColorTemperatureController",
+          "version": "3",
+          "properties": {
+            "supported": [
+              {
+                "name": "colorTemperatureInKelvin"
+              }
+            ],
+            "proactivelyReported": true,
+            "retrievable": true
+          }
+        },
+        {
+          "type": "AlexaInterface",
+          "interface": "Alexa.EndpointHealth",
+          "version": "3",
+          "properties": {
+            "supported": [
+              {
+                "name": "connectivity"
+              }
+            ],
+            "proactivelyReported": true,
+            "retrievable": true
+          }
+        },
+        {
+          "type": "AlexaInterface",
+          "interface": "Alexa",
+          "version": "3"
+        },
+        {
+          "type": "AlexaInterface",
+          "interface": "Alexa.ColorController",
+          "version": "3",
+          "properties": {
+            "supported": [
+              {
+                "name": "color"
+              }
+            ],
+            "proactivelyReported": true,
+            "retrievable": true
+          }
+        },
+        {
+          "type": "AlexaInterface",
+          "interface": "Alexa.PowerController",
+          "version": "3",
+          "properties": {
+            "supported": [
+              {
+                "name": "powerState"
+              }
+            ],
+            "proactivelyReported": true,
+            "retrievable": true
+          }
+        },
+        {
+          "type": "AlexaInterface",
+          "interface": "Alexa.BrightnessController",
+          "version": "3",
+          "properties": {
+            "supported": [
+              {
+                "name": "brightness"
+              }
+            ],
+            "proactivelyReported": true,
+            "retrievable": true
+          }
+        }
+      ]
     }
   ]
 }
