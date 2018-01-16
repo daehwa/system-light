@@ -6,7 +6,7 @@ const NAMESPACE_BRIGHTNESS_CONTROL = "Alexa.BrightnessController";
 const NAMESPACE_COLOR_CONTROL = "Alexa.ColorController";
 const NAMESPACE_COLOR_TEMPERATURE_CONTROL = "Alexa.ColorTemperatureController";
 
-//event
+//Response event
 const RESPONSE = "Alexa";
 const NAME_RESPONSE = "Response";
 
@@ -55,115 +55,170 @@ const ERROR_UNSUPPORTED_OPTERATION = "UnsupportedOperationError";
 const ERROR_UNEXPECTED_INFO = "UnexpectedInformationReceivedError";
 
 //path for light
+const BASE_URL = "http://localhost:9000/gw/v1";
+const BASE_URL_PARTION = "/gw/v1";
 const DISCOVERY_LIGHT_PATH = "/gateway/0/discovery";
+const BODY_FORM_LOCATION = "./gw_response_template/change_light_state_body.json";
 
 //for light request
 var http = require('http');
 var gate = require("./gate.json");
 
+//response entries
+var context, header, endpoint, payload;
+var namespace,name,value;
+
 //response handling from gateway
-function handleResponse(response){
+//callback1: makeResponse, make formation of response (AWS Lambda -> Alexa server)
+//callback2: returnResponse, return the response (AWS Lambda -> Alexa server)
+function handleResponse(response,callback1,callback2){
   var serverData = '';
   response.on('data',function(chunk){
     serverData += chunk;
   });
   response.on('end',function(){
     console.log("response (gateway -> AWS Lambda):\r\n"+serverData+"\r\n");
+		var d = JSON.parse(serverData);
+    callback1(d,callback2);
   });
-}
-
-//reguest from skill adapter to gateway
-var gwGETRequest= function(p){
-  var options = {
-    hostname: gate.sl.gateway,
-    port: gate.sl.portnum,
-    path: p
-  };
-  console.log("request (AWS Lambda -> gateway):\r\n"+JSON.stringify(options)+"\r\n");
-  http.request(options,function(response){
-    handleResponse(response);
-  }).end();
 };
 
+//request from skill adapter to gateway
+var gwRequest= function(p, m, body, callback1, callback2){
+  var options = {
+    host: gate.sl.gateway,
+    port: gate.sl.portnum,
+    path: BASE_URL_PARTION + p,
+    method: m,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+  console.log("request (AWS Lambda -> gateway):\r\n"+JSON.stringify(options)+"\r\n");
+  if(m == 'GET'){
+    http.request(options,function(response){
+      handleResponse(response,callback1,callback2);
+    }).end();
+  }
+  else{
+    var bodyString = JSON.stringify(body);
+    http.request(options,function(response){
+      handleResponse(response,callback1,callback2);
+    }).write(bodyString);
+  }
+};
+
+var makeResponse = function(gwResponseData,callback){
+	var success = gwResponseData.result_msg == "Success";
+
+	if(success){
+  	context = createContext(namespace,name,value);
+    response = createDirective2(context,header,endpoint,payload);
+ 	}
+  else{
+  	response = null;
+    //note! error handling code needed
+    //response = some function for error handling;
+	}
+  callback(response);
+};
 
 //entry
 exports.handler = function(event,context,callback){
     console.log("request (Alexa Service -> AWS Lambda):\r\n"+JSON.stringify(event)+"\r\n");
     var requestdNamespace = event.directive.header.namespace;
     var response = null;
+
+    var returnResponse = function(response){
+      console.log("response (AWS Lambda -> Alexa Service):\r\n"+JSON.stringify(response)+"\r\n");
+      callback(null,response);
+    }
+
     try{
         switch(requestdNamespace){
             case NAMESPACE_DISCOVERY:
-                response = handleDiscovery(event);
+                handleDiscovery(event,returnResponse);
                 break;
             case NAMESPACE_POWER_CONTROL:
-                response = handlePowerControl(event);
+                handlePowerControl(event,returnResponse);
                 break;
             case NAMESPACE_POWER_LEVEL_CONTROL:
-                response = handlePowerLevelControl(event);
+                handlePowerLevelControl(event,returnResponse);
                 break;
             case NAMESPACE_BRIGHTNESS_CONTROL:
-                response = handleBrightnessControl(event);
+                handleBrightnessControl(event,returnResponse);
                 break;
             case NAMESPACE_COLOR_CONTROL:
-                response = handleColorControl(event);
+                handleColorControl(event,returnResponse);
                 break;
             case NAMESPACE_COLOR_TEMPERATURE_CONTROL:
-                response = handleColorTemperatureControl(event);
+                handleColorTemperatureControl(event,returnResponse);
                 break;
             default:
-                response = handleUnexpectedInfo(requestdNamespace);
+                handleUnexpectedInfo(requestdNamespace);
                 break;
         }
     } catch(error){
-        console.log(JSON.stringify(error));
+        console.log("error: "+JSON.stringify(error));
     }
-    console.log("response (AWS Lambda -> Alexa Service):\r\n"+JSON.stringify(response)+"\r\n");
-    callback(null,response);
+    //console.log("response (AWS Lambda -> Alexa Service):\r\n"+JSON.stringify(response)+"\r\n");
+    //callback(null,response);
 };
 //handle Discovery 
 var handleDiscovery = function(event){
     var header = createHeader(NAMESPACE_DISCOVERY,RESPONSE_DISCOVER,event.directive.header.correlationToken);
     var payload = require('./discovery_payload.json');
-    //gwGETRequest(DISCOVERY_LIGHT_PATH);
+    //gwRequest(DISCOVERY_LIGHT_PATH,'GET',null,null,null);
+    //http.get(BASE_URL+DISCOVERY_LIGHT_PATH);
     return createDirective(header,payload);
 };
 
 //handle Control
-var handlePowerControl = function(event){
-    var response = null;
-    
-    var context = null;
-    var header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
-    var endpoint = createEndpoint(event);
-    var payload = {};
-    
+var handlePowerControl = function(event,callback){
+    //init response entries
+    context = null;
+    header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
+    endpoint = createEndpoint(event);
+    payload = {};
+    //init response entries
+		namespace = NAMESPACE_POWER_CONTROL;
+    name = RESPONSE_POWER;
+    value = null;
+		//request to gw
+		//note! should put current state
+		var body = require(BODY_FORM_LOCATION);
+		var did = event.directive.endpoint.endpointId;
+
     var requestName = event.directive.header.name;
     switch(requestName){
         case NAME_TURN_ON:
-            context = createContext(NAMESPACE_POWER_CONTROL,RESPONSE_POWER,CONTEXT_VALUE_ON);
-            response = createDirective2(context,header,endpoint,payload);
+						body["onoff"] = "on";
+            value = CONTEXT_VALUE_ON;
+   	        gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
             break;
         case NAME_TURN_OFF:
-            context = createContext(NAMESPACE_POWER_CONTROL,RESPONSE_POWER,CONTEXT_VALUE_OFF);
-            response = createDirective2(context,header,endpoint,payload);
+						body["onoff"] = "off";
+            value = CONTEXT_VALUE_OFF;
+   	        gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
             response = handleUnsupportedOperation();
             break;
     }
-    return response;
 };
 
 //handle PowerLevelControl
-var handlePowerLevelControl = function(event){
-    var response = null;
-    
-    var value =null, context = null;
-    var header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
-    var endpoint = createEndpoint(event);
-    var payload = {};
+var handlePowerLevelControl = function(event,callback){
+    //init response entries
+    context = null;
+    header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
+    endpoint = createEndpoint(event);
+    payload = {};
+    //init response entries
+    namespace = NAMESPACE_POWER_LEVEL_CONTROL;
+    name = RESPONSE_POWER_LEVEL;
+    value = null;
     
     var requestName = event.directive.header.name;
     switch(requestName){
@@ -174,7 +229,8 @@ var handlePowerLevelControl = function(event){
             break;
         case NAME_ADJUST_POWER_LEVEL:
             value = event.directive.payload.powerLevelDelta;
-            context = createContext(NAMESPACE_POWER_LEVEL_CONTROL,RESPONSE_POWER_LEVEL,value); // note! may need to modify value: not the delta value, absolute value
+            context = createContext(NAMESPACE_POWER_LEVEL_CONTROL,RESPONSE_POWER_LEVEL,value);
+            // note! may need to modify value: not the delta value, absolute value
             response = createDirective2(context,header,endpoint,payload);
             break;
         default:
@@ -186,110 +242,121 @@ var handlePowerLevelControl = function(event){
 };
 
 //Brightness
-var handleBrightnessControl = function(event){
-    var response = null;
-    
-    var value =null, context = null;
-    var header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
-    var endpoint = createEndpoint(event);
-    var payload = {};
-    
+var handleBrightnessControl = function(event,callback){
+    //init response entries
+    context = null;
+    header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
+    endpoint = createEndpoint(event);
+    payload = {};
+    //init response entries
+    namespace = NAMESPACE_BRIGHTNESS_CONTROL;
+    name = RESPONSE_BRIGHTNESS;
+    value = null;
+
+    //request to gw
+    //note! should put current state
+    var body = require(BODY_FORM_LOCATION);
+    var did = event.directive.endpoint.endpointId;
+
     var requestName = event.directive.header.name;
     switch(requestName){
         case NAME_SET_BRIGHTNESS:
             value = event.directive.payload.brightness;
-            context = createContext(NAMESPACE_BRIGHTNESS_CONTROL,RESPONSE_BRIGHTNESS,value);
-            response = createDirective2(context,header,endpoint,payload);
+            body["level"] = value;
+            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
             break;
         case NAME_ADJUST_BRIGHTNESS:
             value = event.directive.payload.brightnessDelta;
-            context = createContext(NAMESPACE_BRIGHTNESS_CONTROL,RESPONSE_BRIGHTNESS,value); // note! may need to modify value: not the delta value, absolute value
-            response = createDirective2(context,header,endpoint,payload);
+            body["level"] = value;
+            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
+            // note! may need to modify value: not the delta value, absolute value
             break;
         default:
             log("Error","Unsupported operation" + requestName);
             response = handleUnsupportedOperation();
             break;
     }
-    
     if(value <0 || value >100){
         log("Error","Invalid value" + requestName);
         response = handleUnsupportedOperation();
     }
-    return response;
 };
 
 //color
-var handleColorControl = function(event){
-    var response = null;
-    
-    var value =null, context = null;
-    var header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
-    var endpoint = createEndpoint(event);
-    var payload = {};
-    
+var handleColorControl = function(event,callback){
+    //init response entries
+    context = null;
+    header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
+    endpoint = createEndpoint(event);
+    payload = {};
+    //init response entries
+    namespace = NAMESPACE_COLOR_CONTROL;
+    name = RESPONSE_COLOR;
+    value = null;
+
+    //request to gw
+    //note! should put current state
+    var body = require(BODY_FORM_LOCATION);
+    var did = event.directive.endpoint.endpointId;
+
     var requestName = event.directive.header.name;
     switch(requestName){
         case NAME_SET_COLOR:
             value = event.directive.payload.color;
-            context = createContext(NAMESPACE_COLOR_CONTROL,RESPONSE_COLOR,value);
-            response = createDirective2(context,header,endpoint,payload);
+            body["hue"] = value.hue;
+            body["saturation"] = value.saturation;
+            body["brightness"] = value.brightness;
+            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
             response = handleUnsupportedOperation();
             break;
     }
-    return response;
 };
 
 //Color Temperature
-var handleColorTemperatureControl = function(event){
-    var response = null;
-    
-    var value =null, context = null;
-    var header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
-    var endpoint = createEndpoint(event);
-    var payload = {};
-    
+var handleColorTemperatureControl = function(event,callback){
+    //init response entries
+    context = null;
+    header = createHeader(RESPONSE,NAME_RESPONSE,event.directive.header.correlationToken);
+    endpoint = createEndpoint(event);
+    payload = {};
+    //init response entries
+    namespace = NAMESPACE_COLOR_TEMPERATURE_CONTROL;
+    name = RESPONSE_COLOR_TEMPERATURE;
+    value = null;
+
+    //request to gw
+    //note! should put current state
+    var body = require(BODY_FORM_LOCATION);
+    var did = event.directive.endpoint.endpointId;
+ 
     var requestName = event.directive.header.name;
     switch(requestName){
         case NAME_DECREASE_COLOR_TEMPERATURE:
             value = 1000;
-            context = createContext(NAMESPACE_COLOR_TEMPERATURE_CONTROL,RESPONSE_COLOR_TEMPERATURE,value); // note! may need to modify value: not the delta value, absolute value
-            response = createDirective2(context,header,endpoint,payload);
+            body["colortemp"] = value;
+            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
+						// note! may need to modify value: not the delta value, absolute value
             break;
         case NAME_INCREASE_COLOR_TEMPERATURE:
             value = 1000;
-            context = createContext(NAMESPACE_COLOR_TEMPERATURE_CONTROL,RESPONSE_COLOR_TEMPERATURE,value); // note! may need to modify value: not the delta value, absolute value
-            response = createDirective2(context,header,endpoint,payload);
+            body["colortemp"] = value;
+            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
+            // note! may need to modify value: not the delta value, absolute value
             break;
         case NAME_SET_COLOR_TEMPERATURE:
             value = event.directive.payload.colorTemperatureInKelvin;
-            context = createContext(NAMESPACE_COLOR_TEMPERATURE_CONTROL,RESPONSE_COLOR_TEMPERATURE,value);
-            response = createDirective2(context,header,endpoint,payload);
+            body["colortemp"] = value;
+            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
             response = handleUnsupportedOperation();
             break;
     }
-    return response;
 }
-/*var handlePowerControlTurnOn = function(event){
-    var context = createContext(NAMESPACE_POWER_CONTROL,RESPONSE_POWER,CONTEXT_VALUE_ON);
-    var header = createHeader(RESPONSE,NAME_RESPONSE);
-    var endpoint = createEndpoint(event);
-    var payload = {};
-    return createPowerDirective(context,header,endpoint,payload);
-};
-var handlePowerControlTurnOff = function(event){
-    var context = createContext(NAMESPACE_POWER_CONTROL,RESPONSE_POWER,CONTEXT_VALUE_OFF);
-    var header = createHeader(RESPONSE,NAME_RESPONSE);
-    var endpoint = createEndpoint(event);
-    var payload = {};
-    return createPowerDirective(context,header,endpoint,payload);
-};*/
 var handleUnsupportedOperation = function(){
     var header = createHeader(NAMESPACE_POWER_CONTROL,ERROR_UNSUPPORTED_OPTERATION,event.directive.header.correlationToken);
     var payload = {};

@@ -1,0 +1,22 @@
+{
+  "directive": {
+    "header": {
+      "namespace": "Alexa.PowerLevelController",
+      "name": "AdjustPowerLevel",
+      "messageId": "da81f4fb-c916-4bd4-9eb3-fe35ba6bae2a",
+      "correlationToken": "dFMb0z+PgpgdDmluhJ1LddFvSqZ/jCc8ptlAKulUj90jSqg==",
+      "payloadVersion": "3"
+    },
+    "endpoint": {
+      "scope": {
+        "type": "BearerToken",
+        "token": "access-token-from-skill"
+      },
+      "endpointId": "appliance-001",
+      "cookie": {}
+    },
+    "payload": {
+      "powerLevelDelta": 3
+    }
+  }
+}
