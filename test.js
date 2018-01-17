@@ -1,16 +1,6 @@
 var http = require('http');
 var gate = require("./gate.json");
 
-var options = {
-    host: gate.sl.gw,
-    port: gate.sl.portnum,
-    path: '/gw/v1/device/0/light',
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-  }
-};
-
 var body = {
       "onoff":"default",
       "level":"default",
@@ -26,8 +16,20 @@ var body = {
       "tt":"default"
 };
 
-//PUT
 var bodyString = JSON.stringify(body);
+var options = {
+    host: gate.sl.gw,
+    port: gate.sl.portnum,
+    path: '/gw/v1/device/0/light',
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': bodyString.length
+  }
+};
+
+
+//PUT
 console.log("0");
 http.request(options,function(response){
   console.log("1");

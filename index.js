@@ -9,6 +9,7 @@ const NAMESPACE_COLOR_TEMPERATURE_CONTROL = "Alexa.ColorTemperatureController";
 //Response event
 const RESPONSE = "Alexa";
 const NAME_RESPONSE = "Response";
+const NAME_ERROR = "ErrorResponse";
 
 //Discovery
 const REQUEST_DISCOVER = "Discover";
@@ -77,6 +78,9 @@ function handleResponse(response,body,callback1,callback2){
   response.on('data',function(chunk){
     serverData += chunk;
   });
+  response.on('uncaughtException',function(err){
+    console.log("uncaughtException: "+err);
+  });
   response.on('end',function(){
     console.log("response (gateway -> AWS Lambda):\r\n"+serverData+"\r\n");
 		var d = JSON.parse(serverData);
@@ -87,7 +91,7 @@ function handleResponse(response,body,callback1,callback2){
 //request from skill adapter to gateway
 var gwRequest= function(p, m, body, callback1, callback2){
   var options = {
-    host: gate.sl.gateway,
+    host: gate.sl.gw,
     port: gate.sl.portnum,
     path: BASE_URL_PARTION + p,
     method: m,
@@ -103,15 +107,18 @@ var gwRequest= function(p, m, body, callback1, callback2){
   }
   else{
     var bodyString = JSON.stringify(body);
+   options["headers"] = {
+      'Content-Type': 'application/json',
+			'Content-Length': bodyString.length
+    };
     http.request(options,function(response){
-      handleResponse(response,callback1,callback2);
+      handleResponse(response,null,callback1,callback2);
     }).write(bodyString);
   }
 };
 
 var makeResponse = function(gwResponseData,body,callback){
 	var success = gwResponseData.result_msg == "Success";
-
 	if(success){
   	context = createContext(namespace,name,value);
 
@@ -131,17 +138,59 @@ var makeResponse = function(gwResponseData,body,callback){
     }
     else if(body !=null){//If Adjust-things
       var did = gwResponseData.result_data.dinfo.did;
-      body["level"] = body.level + gwResponseData.result_data.light.level;
-      gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
+      var value = null;
+      var min=null,max=null;
+
+      switch(name){
+        case RESPONSE_BRIGHTNESS:
+          value = body.level + gwResponseData.result_data.light.level;
+          min = 0;
+          max = 100;
+          body.level = value;
+          break;
+        case RESPONSE_COLOR_TEMPERATURE:
+          value = body.colortemp + gwResponseData.result_data.light.colortemp;
+          min = 1000;
+          max = 10000;
+          body.colortemp = value;
+          break;
+        /*default:
+          
+          response = createErrorResponse(header,endpoint,payload);
+          callback(response);
+          break;*/
+      }
+      //In validRange?
+      if(value < min || value > max){
+        header["name"] = NAME_ERROR;
+        payload = {
+          "type": "VALUE_OUT_OF_RANGE",
+          "message":"The " + name + " cannot be set to " + value,
+          "validRange":{
+            "minumumValue": min,
+            "maximumValue": max
+          }
+        }
+        response = createErrorResponse(header,endpoint,payload);
+        callback(response);
+      }
+      else{
+        gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
+      }
     }
-    else
+    else{//Other things (ex. SetColor, TurnOn/Off, SetBrightness, ...)
       response = createDirective2(context,header,endpoint,payload);
+      callback(response);
+    }
  	}
   else{
-  	response = null;
+    header["name"] = NAME_ERROR;
+    payload = {
+      "type":"INTERNAL_ERROR",
+      "message": "The gateway fails to change light setting"
+    }
+  	response = createErrorResponse(header,endpoint,payload);
     callback(response);
-    //note! error handling code needed
-    //response = some function for error handling;
 	}
 };
 
@@ -461,6 +510,15 @@ var createDirective2 = function(context,header,endpoint,payload){
         "payload": payload
     };
 };
+var createErrorResponse = function(header,endpoint,payload){
+  return{
+    "event":{
+      "header": header,
+      "endpoint": endpoint,
+      "payload": payload
+    }
+  }
+}
 
 var log = function(title,msg){
     console.log('****' + title + ': ' + JSON.stringify(msg));
