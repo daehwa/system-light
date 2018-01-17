@@ -55,13 +55,14 @@ const ERROR_UNSUPPORTED_OPTERATION = "UnsupportedOperationError";
 const ERROR_UNEXPECTED_INFO = "UnexpectedInformationReceivedError";
 
 //path for light
-const BASE_URL = "http://localhost:9000/gw/v1";
+//const BASE_URL = "http://localhost:9000/gw/v1";
 const BASE_URL_PARTION = "/gw/v1";
 const DISCOVERY_LIGHT_PATH = "/gateway/0/discovery";
 const BODY_FORM_LOCATION = "./gw_response_template/change_light_state_body.json";
 
 //for light request
 var http = require('http');
+var async = require('async');
 var gate = require("./gate.json");
 
 //response entries
@@ -71,7 +72,7 @@ var namespace,name,value;
 //response handling from gateway
 //callback1: makeResponse, make formation of response (AWS Lambda -> Alexa server)
 //callback2: returnResponse, return the response (AWS Lambda -> Alexa server)
-function handleResponse(response,callback1,callback2){
+function handleResponse(response,body,callback1,callback2){
   var serverData = '';
   response.on('data',function(chunk){
     serverData += chunk;
@@ -79,7 +80,7 @@ function handleResponse(response,callback1,callback2){
   response.on('end',function(){
     console.log("response (gateway -> AWS Lambda):\r\n"+serverData+"\r\n");
 		var d = JSON.parse(serverData);
-    callback1(d,callback2);
+    callback1(d,body,callback2);
   });
 };
 
@@ -97,7 +98,7 @@ var gwRequest= function(p, m, body, callback1, callback2){
   console.log("request (AWS Lambda -> gateway):\r\n"+JSON.stringify(options)+"\r\n");
   if(m == 'GET'){
     http.request(options,function(response){
-      handleResponse(response,callback1,callback2);
+      handleResponse(response,body,callback1,callback2);
     }).end();
   }
   else{
@@ -108,19 +109,40 @@ var gwRequest= function(p, m, body, callback1, callback2){
   }
 };
 
-var makeResponse = function(gwResponseData,callback){
+var makeResponse = function(gwResponseData,body,callback){
 	var success = gwResponseData.result_msg == "Success";
 
 	if(success){
   	context = createContext(namespace,name,value);
-    response = createDirective2(context,header,endpoint,payload);
+
+    var r = gwResponseData.result_data;
+    //if Discovery
+    if(r != undefined && body ==null){
+      var endpoints = require('./responses_template/endpoints.json');
+      endpoints["endpointId"] = r.gid;
+      endpoints.cookie["iblid"] = r.iblid;
+      var payload = {
+        "endpoints": [
+          endpoints
+        ]
+      }
+      response = createDirective(header,payload);
+      callback(response);
+    }
+    else if(body !=null){//If Adjust-things
+      var did = gwResponseData.result_data.dinfo.did;
+      body["level"] = body.level + gwResponseData.result_data.light.level;
+      gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
+    }
+    else
+      response = createDirective2(context,header,endpoint,payload);
  	}
   else{
   	response = null;
+    callback(response);
     //note! error handling code needed
     //response = some function for error handling;
 	}
-  callback(response);
 };
 
 //entry
@@ -165,12 +187,10 @@ exports.handler = function(event,context,callback){
     //callback(null,response);
 };
 //handle Discovery 
-var handleDiscovery = function(event){
-    var header = createHeader(NAMESPACE_DISCOVERY,RESPONSE_DISCOVER,event.directive.header.correlationToken);
-    var payload = require('./discovery_payload.json');
-    //gwRequest(DISCOVERY_LIGHT_PATH,'GET',null,null,null);
-    //http.get(BASE_URL+DISCOVERY_LIGHT_PATH);
-    return createDirective(header,payload);
+var handleDiscovery = function(event,callback){
+    header = createHeader(NAMESPACE_DISCOVERY,RESPONSE_DISCOVER,event.directive.header.correlationToken);
+    payload = null; //require('./discovery_payload.json');
+    gwRequest(DISCOVERY_LIGHT_PATH,'GET',null,makeResponse,callback);
 };
 
 //handle Control
@@ -185,7 +205,6 @@ var handlePowerControl = function(event,callback){
     name = RESPONSE_POWER;
     value = null;
 		//request to gw
-		//note! should put current state
 		var body = require(BODY_FORM_LOCATION);
 		var did = event.directive.endpoint.endpointId;
 
@@ -254,7 +273,6 @@ var handleBrightnessControl = function(event,callback){
     value = null;
 
     //request to gw
-    //note! should put current state
     var body = require(BODY_FORM_LOCATION);
     var did = event.directive.endpoint.endpointId;
 
@@ -268,8 +286,7 @@ var handleBrightnessControl = function(event,callback){
         case NAME_ADJUST_BRIGHTNESS:
             value = event.directive.payload.brightnessDelta;
             body["level"] = value;
-            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
-            // note! may need to modify value: not the delta value, absolute value
+            gwRequest("/device/"+did,'GET',body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -295,7 +312,6 @@ var handleColorControl = function(event,callback){
     value = null;
 
     //request to gw
-    //note! should put current state
     var body = require(BODY_FORM_LOCATION);
     var did = event.directive.endpoint.endpointId;
 
@@ -328,7 +344,6 @@ var handleColorTemperatureControl = function(event,callback){
     value = null;
 
     //request to gw
-    //note! should put current state
     var body = require(BODY_FORM_LOCATION);
     var did = event.directive.endpoint.endpointId;
  
@@ -337,14 +352,12 @@ var handleColorTemperatureControl = function(event,callback){
         case NAME_DECREASE_COLOR_TEMPERATURE:
             value = 1000;
             body["colortemp"] = value;
-            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
-						// note! may need to modify value: not the delta value, absolute value
+            gwRequest("/device/"+did,'GET',body,makeResponse,callback);
             break;
         case NAME_INCREASE_COLOR_TEMPERATURE:
             value = 1000;
             body["colortemp"] = value;
-            gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
-            // note! may need to modify value: not the delta value, absolute value
+            gwRequest("/device/"+did,'GET',body,makeResponse,callback);
             break;
         case NAME_SET_COLOR_TEMPERATURE:
             value = event.directive.payload.colorTemperatureInKelvin;

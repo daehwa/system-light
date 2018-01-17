@@ -1,0 +1,39 @@
+{
+    "result_code": "200",
+    "result_msg": "Success",
+    "result_data": {
+				"sync": "2017-01-11 14:10:10",
+		    "dinfo": {
+					"did": 0,
+				  "dpid": "1234567890AABBCCDD",
+          "product_code": "03EF0103ABCDEFGH123456ABCDEFGH12345678",
+          "serial_number": "1609123456",
+  		    "iblid": "0001000000000000000000"
+				},
+				"mcnt": {
+				
+				},	
+				"light": {
+					"onoff":"on",
+					"level":1000,
+					"colortemp":5000,
+					"hue":359,
+					"saturation":100,
+					"brightness":100,
+					"x":0.22,
+					"y":0.48,
+					"r":255,
+					"g":255,
+					"b":255
+				},
+				"presence": {
+
+				},
+				"illuminance": {
+				
+				},
+				"temperature": {
+				
+				}
+		}
+}

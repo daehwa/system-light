@@ -1,7 +1,7 @@
 {
   "endpoints": [
     {
-      "endpointId": "appliance-001",
+      "endpointId": "0",
       "friendlyName": "Living Room Light",
       "description": "Smart Light by Sample Manufacturer",
       "manufacturerName": "Sample Manufacturer",

@@ -1,7 +1,7 @@
 {
   "sl": {
     "gw":"localhost",
-    "portnum":"9000"
+    "portnum":"8080"
    }
 }
 
