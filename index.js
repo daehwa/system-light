@@ -63,7 +63,6 @@ const BODY_FORM_LOCATION = "./gw_response_template/change_light_state_body.json"
 
 //for light request
 var http = require('http');
-var async = require('async');
 var gate = require("./gate.json");
 
 //response entries
@@ -120,8 +119,6 @@ var gwRequest= function(p, m, body, callback1, callback2){
 var makeResponse = function(gwResponseData,body,callback){
 	var success = gwResponseData.result_msg == "Success";
 	if(success){
-  	context = createContext(namespace,name,value);
-
     var r = gwResponseData.result_data;
     //if Discovery
     if(r != undefined && body ==null){
@@ -138,7 +135,7 @@ var makeResponse = function(gwResponseData,body,callback){
     }
     else if(body !=null){//If Adjust-things
       var did = gwResponseData.result_data.dinfo.did;
-      var value = null;
+      value = null;
       var min=null,max=null;
 
       switch(name){
@@ -161,7 +158,7 @@ var makeResponse = function(gwResponseData,body,callback){
           break;*/
       }
       //In validRange?
-      if(value < min || value > max){
+      if(value < min || value > max){ //invalid
         header["name"] = NAME_ERROR;
         payload = {
           "type": "VALUE_OUT_OF_RANGE",
@@ -174,11 +171,12 @@ var makeResponse = function(gwResponseData,body,callback){
         response = createErrorResponse(header,endpoint,payload);
         callback(response);
       }
-      else{
+      else{ //valid
         gwRequest("/device/"+did+"/light",'PUT',body,makeResponse,callback);
       }
     }
     else{//Other things (ex. SetColor, TurnOn/Off, SetBrightness, ...)
+  	  context = createContext(namespace,name,value);
       response = createDirective2(context,header,endpoint,payload);
       callback(response);
     }
