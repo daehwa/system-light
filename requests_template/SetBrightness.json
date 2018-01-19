@@ -12,8 +12,10 @@
         "type": "BearerToken",
         "token": "access-token-from-skill"
       },
-      "endpointId": 0,
-      "cookie": {}
+      "endpointId": 4,
+      "cookie": {
+        "unit": "device"
+      }
     },
     "payload": {
       "brightness": 42

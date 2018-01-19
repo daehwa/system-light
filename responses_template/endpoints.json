@@ -7,7 +7,7 @@
         "LIGHT"
       ],
       "cookie": {
-        "iblid": "default",
+        "unit": "default",
         "extraDetail1": "optionalDetailForSkillAdapterToReferenceThisDevice",
         "extraDetail2": "There can be multiple entries",
         "extraDetail3": "but they should only be used for reference purposes",

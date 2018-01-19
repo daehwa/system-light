@@ -15,7 +15,7 @@
 				},	
 				"light": {
 					"onoff":"on",
-					"level":1000,
+					"level":50,
 					"colortemp":5000,
 					"hue":359,
 					"saturation":100,

@@ -1,0 +1,22 @@
+{
+	"result_code": "200", 
+	"result_msg": "Success",
+  "result_data": {
+  "device_list": [{
+			"did": 16, 
+  		"light": {
+				"onoff": "on", 
+        "level": 1000, 
+        "colortemp": 5000, 
+        "hue": 359, 
+        "saturation": 100, 
+        "brightness": 100, 
+        "x": 0.22, 
+        "y": 0.48, 
+        "r": 255, 
+        "g": 255, 
+        "b": 255
+			} 
+		}]
+	} 
+} 

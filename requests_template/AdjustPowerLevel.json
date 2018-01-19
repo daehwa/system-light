@@ -12,7 +12,7 @@
         "type": "BearerToken",
         "token": "access-token-from-skill"
       },
-      "endpointId": 0,
+      "endpointId": 4,
       "cookie": {}
     },
     "payload": {

@@ -12,8 +12,10 @@
         "type": "BearerToken",
         "token": "access-token-from-Amazon"
       },
-      "endpointId": 0,
-      "cookie": {}
+      "endpointId": 4,
+      "cookie": {
+        "unit": "device"
+      }
     },
     "payload": {
       "brightnessDelta": 3
