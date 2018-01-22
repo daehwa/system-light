@@ -1,8 +1,8 @@
 {
   "directive": {
     "header": {
-      "namespace": "Alexa.BrightnessController",
-      "name": "SetBrightness",
+      "namespace": "Alexa.ColorTemperatureController",
+      "name": "IncreaseColorTemperature",
       "payloadVersion": "3",
       "messageId": "1bd5d003-31b9-476f-ad03-71d471922820",
       "correlationToken": "dFMb0z+PgpgdDmluhJ1LddFvSqZ/jCc8ptlAKulUj90jSqg=="
@@ -12,13 +12,11 @@
         "type": "BearerToken",
         "token": "access-token-from-skill"
       },
-      "endpointId": 4,
+      "endpointId": 32769,
       "cookie": {
-        "unit": "device"
+        "unit": "group"
       }
     },
-    "payload": {
-      "brightness": 42
-    }
+    "payload": {}
   }
 }

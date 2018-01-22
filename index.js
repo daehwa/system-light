@@ -107,7 +107,7 @@ var gwRequest= function(p, m, id, unit, body, callback1, callback2){
   }
   else{
     var bodyString = JSON.stringify(body);
-   options["headers"] = {
+    options["headers"] = {
       'Content-Type': 'application/json',
 			'Content-Length': bodyString.length
     };
@@ -144,7 +144,7 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
           v = r.light;
           break;
         case "group":
-          v = ((r.group_list)[0]).light;
+          v = ((r.group_list)[0]);
           body["onlevel"] = 100;
           break;
         case "uspace":
@@ -153,26 +153,26 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
       }
       switch(name){
         case RESPONSE_POWER:
-          min = 0; max = 2; value = 1;
+          /*min = 0; max = 2; value = 1;
           body["level"] = v.level;
           body["colortemp"] = v.colortemp;
-          break;
-        case RESPONSE_COLOR:
+          break;*/
+        /*case RESPONSE_COLOR:
           min = 0; max = 2; value = 1;
+          //body["level"] = v.level;
+          //body["colortemp"] = v.colortemp;
           body["onoff"] = v.onoff;
-          body["level"] = v.level;
-          body["colortemp"] = v.colortemp;
-          break;
+          break;*/
         case RESPONSE_BRIGHTNESS:
           body["onoff"] = v.onoff;
           body["colortemp"] = v.colortemp;
-          var isSet = body.isSet;
+          //var isSet = body.isSet;
           value = body.level;
-          body = {};
-          if(!isSet)
+          //body = {};
+          //if(!isSet)
             body["level"] = value + v.level;
-          else
-            body["level"] = value;
+          //else
+          //  body["level"] = value;
           min = 0;
           max = 100;
           value = body.level;
@@ -180,13 +180,13 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
         case RESPONSE_COLOR_TEMPERATURE:
           body["onoff"]=v.onoff;
           body["level"]=v.level;
-          var isSet = body.isSet;
+          //var isSet = body.isSet;
           value = body.colortemp;
-          body = {};
-          if(!isSet)
+          //body = {};
+          //if(!isSet)
             body["colortemp"] = value + v.colortemp;
-          else
-            body["colortemp"] = value;
+          //else
+          //  body["colortemp"] = value;
           min = 2700; // alexa's range is from 1000 but sl2.0 is from 2700
           max = 6500; // alexa's range is from 10000 but sl2.0 is from 6500
           value = body.colortemp;
@@ -303,12 +303,12 @@ var handlePowerControl = function(event,callback){
     endpoint = createEndpoint(event);
     payload = {};
     //init response entries
-		namespace = NAMESPACE_POWER_CONTROL;
+    namespace = NAMESPACE_POWER_CONTROL;
     name = RESPONSE_POWER;
     value = null;
-		//request to gw
+    //request to gw
     var body = {};
-		var id = event.directive.endpoint.endpointId;
+    var id = event.directive.endpoint.endpointId;
     var unit = event.directive.endpoint.cookie.unit;
 
     var requestName = event.directive.header.name;
@@ -316,18 +316,18 @@ var handlePowerControl = function(event,callback){
         case NAME_TURN_ON:
 						body["onoff"] = "on";
             value = CONTEXT_VALUE_ON;
-            var path = createControlPath(id,unit,true);
-            gwRequest(path,'GET',id,unit,body,makeResponse,callback);
-            //var path = createControlPath(id,unit,false);
-   	        //gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            //var path = createControlPath(id,unit,true);
+            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
+            var path = createControlPath(id,unit,false);
+   	        gwRequest(path,'PUT',null,null,body,makeResponse,callback);
             break;
         case NAME_TURN_OFF:
 						body["onoff"] = "off";
             value = CONTEXT_VALUE_OFF;
-            var path = createControlPath(id,unit,true);
-            gwRequest(path,'GET',id,unit,body,makeResponse,callback);
-            //var path = createControlPath(id,unit,false);
-   	        //gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            //var path = createControlPath(id,unit,true);
+            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
+            var path = createControlPath(id,unit,false);
+   	        gwRequest(path,'PUT',null,null,body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -391,16 +391,16 @@ var handleBrightnessControl = function(event,callback){
         case NAME_SET_BRIGHTNESS:
             value = event.directive.payload.brightness;
             body["level"] = value;
-            body["isSet"] = true;
-            var path = createControlPath(id,unit,true);
-            gwRequest(path,'GET',id,unit,body,makeResponse,callback);
-            //var path = createControlPath(id,unit,false);
-            //gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            //body["isSet"] = true;
+            //var path = createControlPath(id,unit,true);
+            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
+            var path = createControlPath(id,unit,false);
+            gwRequest(path,'PUT',null,null,body,makeResponse,callback);
             break;
         case NAME_ADJUST_BRIGHTNESS:
             value = event.directive.payload.brightnessDelta;
             body["level"] = value;
-            body["isSet"] = false;
+            //body["isSet"] = false;
             var path = createControlPath(id,unit,true);
             gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             break;
@@ -451,10 +451,10 @@ var handleColorControl = function(event,callback){
               var response = createErrorResponse(header,endpoint,payload);
               callback(response);
             }
-            var path = createControlPath(id,unit,true);
-            gwRequest(path,'GET',id,unit,body,makeResponse,callback);
-            //var path = createControlPath(id,unit,false);
-            //gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            //var path = createControlPath(id,unit,true);
+            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
+            var path = createControlPath(id,unit,false);
+            gwRequest(path,'PUT',null,null,body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -496,25 +496,25 @@ var handleColorTemperatureControl = function(event,callback){
         case NAME_DECREASE_COLOR_TEMPERATURE:
             value = -1000;
             body["colortemp"] = value;
-            body["isSet"] = false;
+            //body["isSet"] = false;
             var path = createControlPath(id,unit,true);
             gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             break;
         case NAME_INCREASE_COLOR_TEMPERATURE:
             value = 1000;
             body["colortemp"] = value;
-            body["isSet"] = false;
+            //body["isSet"] = false;
             var path = createControlPath(id,unit,true);
             gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             break;
         case NAME_SET_COLOR_TEMPERATURE:
             value = event.directive.payload.colorTemperatureInKelvin;
             body["colortemp"] = value;
-            body["isSet"] = true;
-            var path = createControlPath(id,unit,true);
-            gwRequest(path,'GET',id,unit,body,makeResponse,callback);
-            //var path = createControlPath(id,unit,false);
-            //gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            //body["isSet"] = true;
+            //var path = createControlPath(id,unit,true);
+            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
+            var path = createControlPath(id,unit,false);
+            gwRequest(path,'PUT',null,null,body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -658,10 +658,10 @@ var createErrorResponse = function(header,endpoint,payload){
 var createControlPath = function(id,unit,isAdjust){
   var path = "/"+unit+"/"+id;
   if(!isAdjust){
-    if(unit == "uspace")
-      path = path + "/status";
-    else
+    if(unit == "device")
       path = path + "/light";
+    else
+      path = path + "/status";
   }
   else{
     if(unit != "device")

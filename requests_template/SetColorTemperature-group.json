@@ -2,7 +2,7 @@
   "directive": {
     "header": {
       "namespace": "Alexa.ColorTemperatureController",
-      "name": "DecreaseColorTemperature",
+      "name": "SetColorTemperature",
       "payloadVersion": "3",
       "messageId": "1bd5d003-31b9-476f-ad03-71d471922820",
       "correlationToken": "dFMb0z+PgpgdDmluhJ1LddFvSqZ/jCc8ptlAKulUj90jSqg=="
@@ -12,11 +12,13 @@
         "type": "BearerToken",
         "token": "access-token-from-skill"
       },
-      "endpointId": 1,
+      "endpointId": 32769,
       "cookie": {
-        "unit": "uspace"
+        "unit": "group"
       }
     },
-    "payload": {}
+    "payload": {
+      "colorTemperatureInKelvin": 5000
+    }
   }
 }
