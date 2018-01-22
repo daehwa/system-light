@@ -14,7 +14,7 @@
       },
       "endpointId": 4,
       "cookie": {
-        "unit": "uspace"
+        "unit": "device"
       }
     },
     "payload": {

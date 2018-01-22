@@ -12,9 +12,9 @@
         "type": "BearerToken",
         "token": "access-token-from-skill"
       },
-      "endpointId": 4,
+      "endpointId": 1,
       "cookie": {
-        "unit": "group"
+        "unit": "uspace"
       }
     },
     "payload": {}
