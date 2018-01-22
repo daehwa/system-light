@@ -61,7 +61,6 @@ const BASE_URL_PARTION = "/gw/v1";
 const DISCOVERY_DEVICE = "/device";
 const DISCOVERY_GROUP = "/group";
 const DISCOVERY_UNIT_SPACE = "/uspace";
-const BODY_FORM_LOCATION = "./gw_response_template/change_light_state_body.json";
 
 //for light request
 var http = require('http');
@@ -308,7 +307,6 @@ var handlePowerControl = function(event,callback){
     name = RESPONSE_POWER;
     value = null;
 		//request to gw
-		//var body = JSON.parse(JSON.stringify(require(BODY_FORM_LOCATION)));
     var body = {};
 		var id = event.directive.endpoint.endpointId;
     var unit = event.directive.endpoint.cookie.unit;
@@ -384,7 +382,6 @@ var handleBrightnessControl = function(event,callback){
     value = null;
 
     //request to gw
-    //var body = JSON.parse(JSON.stringify(require(BODY_FORM_LOCATION)));
     var body = {};
     var id = event.directive.endpoint.endpointId;
     var unit = event.directive.endpoint.cookie.unit;
@@ -431,7 +428,6 @@ var handleColorControl = function(event,callback){
     value = null;
 
     //request to gw
-    //var body = JSON.parse(JSON.stringify(require(BODY_FORM_LOCATION)));
     var body = {};
     var id = event.directive.endpoint.endpointId;
     var unit = event.directive.endpoint.cookie.unit;
@@ -491,7 +487,6 @@ var handleColorTemperatureControl = function(event,callback){
     value = null;
 
     //request to gw
-    //var body = JSON.parse(JSON.stringify(require(BODY_FORM_LOCATION)));
     var body = {};
     var id = event.directive.endpoint.endpointId;
     var unit = event.directive.endpoint.cookie.unit;
