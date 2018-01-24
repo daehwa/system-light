@@ -6,13 +6,19 @@ This cotains main light controlling code  and also system light 2.0 simulator an
 
 You can see code description in [here](https://docs.google.com/document/d/1hajuK4yoB7gbIvkzl0Hl96l0xCGfJwlaoeGf-agEu2A/edit?usp=sharing).
 
-##Network Flow
+## Network Flow
 ![network-flow](./image/network-flow.png)
 
 
-##Request Response example in Discovery
+
+
+
+## Request Response example in Discovery
 ![request-response-example](./image/request-response-example.png)
 
 
-##Smart Home Skill API
+
+
+
+## Smart Home Skill API
 ![smart-home-skill-api](./image/smart-home-skill-api.png)
