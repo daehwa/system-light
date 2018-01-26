@@ -18,7 +18,7 @@
       }
     },
     "payload": {
-      "colorTemperatureInKelvin": 5000
+      "colorTemperatureInKelvin": 3000
     }
   }
 }

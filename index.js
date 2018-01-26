@@ -127,7 +127,7 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
 	if(success){
     var r = gwResponseData.result_data;
 		var scene = isScene(unit,id);
-	  if(scene && body == null){
+	  if(scene && body == null){ // if scene control
 			namespace = NAMESPACE_POWER_CONTROL;
     	name = RESPONSE_POWER;
 			value = CONTEXT_VALUE_ON;
@@ -165,50 +165,24 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
           break;
       }
       switch(name){
-        case RESPONSE_POWER:
-          /*min = 0; max = 2; value = 1;
-          body["level"] = v.level;
-          body["colortemp"] = v.colortemp;
-          break;*/
-        /*case RESPONSE_COLOR:
-          min = 0; max = 2; value = 1;
-          //body["level"] = v.level;
-          //body["colortemp"] = v.colortemp;
-          body["onoff"] = v.onoff;*/
-          break;
         case RESPONSE_BRIGHTNESS:
-          body["onoff"] = v.onoff;
-          body["colortemp"] = v.colortemp;
-          //var isSet = body.isSet;
+          //body["onoff"] = v.onoff;
+          //body["colortemp"] = v.colortemp;
           value = body.level;
-          //body = {};
-          //if(!isSet)
           body["level"] = value + v.level;
-          //else
-          //  body["level"] = value;
           min = 0;
           max = 100;
           value = body.level;
           break;
         case RESPONSE_COLOR_TEMPERATURE:
-          body["onoff"]=v.onoff;
-          body["level"]=v.level;
-          //var isSet = body.isSet;
+          //body["onoff"]=v.onoff;
+          //body["level"]=v.level;
           value = body.colortemp;
-          //body = {};
-          //if(!isSet)
           body["colortemp"] = value + v.colortemp;
-          //else
-          //  body["colortemp"] = value;
           min = 2700; // alexa's range is from 1000 but sl2.0 is from 2700
           max = 6500; // alexa's range is from 10000 but sl2.0 is from 6500
           value = body.colortemp;
           break;
-        /*default:
-          
-          response = createErrorResponse(header,endpoint,payload);
-          callback(response);
-          break;*/
       }
       //In validRange?
       if(value < min || value > max){ //invalid
@@ -268,8 +242,9 @@ exports.handler = function(event,context,callback){
       callback(null,response);
     };
 
+    //handle scene
     var requestdNamespace = event.directive.header.namespace;
-    if(requestdNamespace != NAMESPACE_DISCOVERY){
+    if(requestdNamespace == NAMESPACE_POWER_CONTROL){
       var id = event.directive.endpoint.endpointId;
       var unit = event.directive.endpoint.cookie.unit;
       if(isScene(unit,id)){
@@ -277,13 +252,13 @@ exports.handler = function(event,context,callback){
           case SLEEP_MODE:
             event.directive.header.namespace = NAMESPACE_BRIGHTNESS_CONTROL;
             event.directive.header.name = NAME_SET_BRIGHTNESS;
-            event.directive.payload["brightness"] = 10;
+            event.directive.payload["brightness"] = 5;
             break;
         }
+				requestdNamespace = event.directive.header.namespace;
       }
     }
-
-    requestdNamespace = event.directive.header.namespace;
+    //handle other things
     try{
         switch(requestdNamespace){
             case NAMESPACE_DISCOVERY:
@@ -342,16 +317,12 @@ var handlePowerControl = function(event,callback){
         case NAME_TURN_ON:
 						body["onoff"] = "on";
             value = CONTEXT_VALUE_ON;
-            //var path = createControlPath(id,unit,true);
-            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
    	        gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         case NAME_TURN_OFF:
 						body["onoff"] = "off";
             value = CONTEXT_VALUE_OFF;
-            //var path = createControlPath(id,unit,true);
-            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
    	        gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
@@ -417,16 +388,12 @@ var handleBrightnessControl = function(event,callback){
         case NAME_SET_BRIGHTNESS:
             value = event.directive.payload.brightness;
             body["level"] = value;
-            //body["isSet"] = true;
-            //var path = createControlPath(id,unit,true);
-            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
             gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         case NAME_ADJUST_BRIGHTNESS:
             value = event.directive.payload.brightnessDelta;
             body["level"] = value;
-            //body["isSet"] = false;
             var path = createControlPath(id,unit,true);
             gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             break;
@@ -477,8 +444,6 @@ var handleColorControl = function(event,callback){
               var response = createErrorResponse(header,endpoint,payload);
               callback(response);
             }
-            //var path = createControlPath(id,unit,true);
-            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
             gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
@@ -522,23 +487,18 @@ var handleColorTemperatureControl = function(event,callback){
         case NAME_DECREASE_COLOR_TEMPERATURE:
             value = -1000;
             body["colortemp"] = value;
-            //body["isSet"] = false;
             var path = createControlPath(id,unit,true);
             gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             break;
         case NAME_INCREASE_COLOR_TEMPERATURE:
             value = 1000;
             body["colortemp"] = value;
-            //body["isSet"] = false;
             var path = createControlPath(id,unit,true);
             gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             break;
         case NAME_SET_COLOR_TEMPERATURE:
             value = event.directive.payload.colorTemperatureInKelvin;
             body["colortemp"] = value;
-            //body["isSet"] = true;
-            //var path = createControlPath(id,unit,true);
-            //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
             gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
@@ -548,6 +508,19 @@ var handleColorTemperatureControl = function(event,callback){
             break;
     }
 };
+
+/*var handleSleepMode = function(event,callback){
+  var id = event.directive.endpoint.endpointId;
+  var unit = event.directive.endpoint.cookie.unit;
+  var path = createControlPath(id,unit,false);
+  var body = {};
+  body["colortemp"] = 3000;
+  gwRequest(path,'PUT',id,unit,body,null,callback);
+  body = {};
+  body["brightness"] = 10;
+  gwRequest(path,'PUT',id,unit,body,null,callback);
+};*/
+
 var handleUnsupportedOperation = function(){
     var header = createHeader(NAMESPACE_POWER_CONTROL,ERROR_UNSUPPORTED_OPTERATION,event.directive.header.correlationToken);
     var payload = {};
