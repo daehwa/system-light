@@ -12,7 +12,7 @@
         "type": "BearerToken",
         "token": "access-token-from-skill"
       },
-      "endpointId": 20000,
+      "endpointId": 32773,
       "cookie": {
         "unit": "group"
       }

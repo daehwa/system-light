@@ -18,7 +18,7 @@
       }
     },
     "payload": {
-      "brightnessDelta": 20
+      "brightnessDelta": -40
     }
   }
 }

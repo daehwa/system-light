@@ -63,7 +63,7 @@ const DISCOVERY_GROUP = "/group";
 const DISCOVERY_UNIT_SPACE = "/uspace";
 
 //scenes
-const SLEEP_MODE = 20000;
+const SLEEP_MODE = 32773;
 
 //for light request
 var http = require('http');
@@ -126,8 +126,8 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
 
 	if(success){
     var r = gwResponseData.result_data;
-		var isScene = isScene(unit,id);
-	  if(isScene && body == null){
+		var scene = isScene(unit,id);
+	  if(scene && body == null){
 			namespace = NAMESPACE_POWER_CONTROL;
     	name = RESPONSE_POWER;
 			value = CONTEXT_VALUE_ON;
@@ -268,19 +268,22 @@ exports.handler = function(event,context,callback){
       callback(null,response);
     };
 
-    var id = event.directive.endpoint.endpointId;
-    var unit = event.directive.endpoint.cookie.unit;
-    if(isScene(unit,id)){
-      switch(id){
-        case SLEEP_MODE:
-          event.directive.header.namespace = NAMESPACE_BRIGHTNESS_CONTROL;
-          event.directive.header.name = NAME_SET_BRIGHTNESS;
-          event.directive.payload["brightness"] = 10;
-          break;
+    var requestdNamespace = event.directive.header.namespace;
+    if(requestdNamespace != NAMESPACE_DISCOVERY){
+      var id = event.directive.endpoint.endpointId;
+      var unit = event.directive.endpoint.cookie.unit;
+      if(isScene(unit,id)){
+        switch(id){
+          case SLEEP_MODE:
+            event.directive.header.namespace = NAMESPACE_BRIGHTNESS_CONTROL;
+            event.directive.header.name = NAME_SET_BRIGHTNESS;
+            event.directive.payload["brightness"] = 10;
+            break;
+        }
       }
     }
 
-    var requestdNamespace = event.directive.header.namespace;
+    requestdNamespace = event.directive.header.namespace;
     try{
         switch(requestdNamespace){
             case NAMESPACE_DISCOVERY:
@@ -695,7 +698,7 @@ var createControlPath = function(id,unit,isAdjust){
 
 var isScene = function(unit,id){
   return (unit == "group") && (id == SLEEP_MODE);
-}
+};
 
 var log = function(title,msg){
     console.log('****' + title + ': ' + JSON.stringify(msg));
