@@ -136,15 +136,15 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
 			response = createDirective2(context,header,endpoint,payload);
 			callback(response);
   	}
-    else if(unit == "device" && body ==null){ //if device discovery
+    else if(unit == "device" && id ==null){ //if device discovery
       var d = r.device_list;
     	createEndpoints(d,"did","device",callback);
     }
-		else if(unit == "group" && body == null){ //if group discovery
+		else if(unit == "group" && id == null){ //if group discovery
       var g = r.group_list;
 			createEndpoints(g,"gdid","group",callback);
 		}
-		else if(unit == "uspace" && body == null){ //if unit space discovery
+		else if(unit == "uspace" && id == null){ //if unit space discovery
       var u = r.uspace_list;
 			createEndpoints(u,"uspace_id","uspace",callback);
 		}
