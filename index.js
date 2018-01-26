@@ -62,6 +62,9 @@ const DISCOVERY_DEVICE = "/device";
 const DISCOVERY_GROUP = "/group";
 const DISCOVERY_UNIT_SPACE = "/uspace";
 
+//scenes
+const SLEEP_MODE = 20000;
+
 //for light request
 var http = require('http');
 var gate = require("./gate.json");
@@ -120,10 +123,20 @@ var gwRequest= function(p, m, id, unit, body, callback1, callback2){
 var makeResponse = function(gwResponseData,id,unit,body,callback){
 	var response = null;
 	var success = gwResponseData.result_code == "200";
-	
+
 	if(success){
     var r = gwResponseData.result_data;
-    if(unit == "device" && body ==null){ //if device discovery
+		var isScene = isScene(unit,id);
+	  if(isScene && body == null){
+			namespace = NAMESPACE_POWER_CONTROL;
+    	name = RESPONSE_POWER;
+			value = CONTEXT_VALUE_ON;
+			context = createContext(namespace,name,value);
+    	payload = {};
+			response = createDirective2(context,header,endpoint,payload);
+			callback(response);
+  	}
+    else if(unit == "device" && body ==null){ //if device discovery
       var d = r.device_list;
     	createEndpoints(d,"did","device",callback);
     }
@@ -161,8 +174,8 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
           min = 0; max = 2; value = 1;
           //body["level"] = v.level;
           //body["colortemp"] = v.colortemp;
-          body["onoff"] = v.onoff;
-          break;*/
+          body["onoff"] = v.onoff;*/
+          break;
         case RESPONSE_BRIGHTNESS:
           body["onoff"] = v.onoff;
           body["colortemp"] = v.colortemp;
@@ -170,7 +183,7 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
           value = body.level;
           //body = {};
           //if(!isSet)
-            body["level"] = value + v.level;
+          body["level"] = value + v.level;
           //else
           //  body["level"] = value;
           min = 0;
@@ -184,7 +197,7 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
           value = body.colortemp;
           //body = {};
           //if(!isSet)
-            body["colortemp"] = value + v.colortemp;
+          body["colortemp"] = value + v.colortemp;
           //else
           //  body["colortemp"] = value;
           min = 2700; // alexa's range is from 1000 but sl2.0 is from 2700
@@ -249,13 +262,25 @@ var makeResponse = function(gwResponseData,id,unit,body,callback){
 //entry
 exports.handler = function(event,context,callback){
     console.log("request (Alexa Service -> AWS Lambda):\r\n"+JSON.stringify(event)+"\r\n");
-    var requestdNamespace = event.directive.header.namespace;
 
     var returnResponse = function(response){
       console.log("response (AWS Lambda -> Alexa Service):\r\n"+JSON.stringify(response)+"\r\n");
       callback(null,response);
     };
 
+    var id = event.directive.endpoint.endpointId;
+    var unit = event.directive.endpoint.cookie.unit;
+    if(isScene(unit,id)){
+      switch(id){
+        case SLEEP_MODE:
+          event.directive.header.namespace = NAMESPACE_BRIGHTNESS_CONTROL;
+          event.directive.header.name = NAME_SET_BRIGHTNESS;
+          event.directive.payload["brightness"] = 10;
+          break;
+      }
+    }
+
+    var requestdNamespace = event.directive.header.namespace;
     try{
         switch(requestdNamespace){
             case NAMESPACE_DISCOVERY:
@@ -283,8 +308,6 @@ exports.handler = function(event,context,callback){
     } catch(error){
         console.log("error: "+JSON.stringify(error));
     }
-    //console.log("response (AWS Lambda -> Alexa Service):\r\n"+JSON.stringify(response)+"\r\n");
-    //callback(null,response);
 };
 //handle Discovery: This discovers the devices, groups, and unit spaces
 var handleDiscovery = function(event,callback){
@@ -319,7 +342,7 @@ var handlePowerControl = function(event,callback){
             //var path = createControlPath(id,unit,true);
             //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
-   	        gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+   	        gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         case NAME_TURN_OFF:
 						body["onoff"] = "off";
@@ -327,7 +350,7 @@ var handlePowerControl = function(event,callback){
             //var path = createControlPath(id,unit,true);
             //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
-   	        gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+   	        gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -395,7 +418,7 @@ var handleBrightnessControl = function(event,callback){
             //var path = createControlPath(id,unit,true);
             //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
-            gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         case NAME_ADJUST_BRIGHTNESS:
             value = event.directive.payload.brightnessDelta;
@@ -454,7 +477,7 @@ var handleColorControl = function(event,callback){
             //var path = createControlPath(id,unit,true);
             //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
-            gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -514,7 +537,7 @@ var handleColorTemperatureControl = function(event,callback){
             //var path = createControlPath(id,unit,true);
             //gwRequest(path,'GET',id,unit,body,makeResponse,callback);
             var path = createControlPath(id,unit,false);
-            gwRequest(path,'PUT',null,null,body,makeResponse,callback);
+            gwRequest(path,'PUT',id,unit,body,makeResponse,callback);
             break;
         default:
             log("Error","Unsupported operation" + requestName);
@@ -668,6 +691,10 @@ var createControlPath = function(id,unit,isAdjust){
       path = path + "/dstatus";
   }
   return path;
+}
+
+var isScene = function(unit,id){
+  return (unit == "group") && (id == SLEEP_MODE);
 }
 
 var log = function(title,msg){
