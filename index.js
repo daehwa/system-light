@@ -63,7 +63,7 @@ const DISCOVERY_GROUP = "/group";
 const DISCOVERY_UNIT_SPACE = "/uspace";
 
 //scenes
-const SLEEP_MODE = 32773;
+const SLEEP_MODE = 32777;
 
 //for light request
 var http = require('http');
